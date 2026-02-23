@@ -1,2 +1,2 @@
-return "CI/CD WORKS"
+return "CI/CD WORKS."
 

@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE = "ghcr.io/ameniaz12/devsecops-project"
-        CREDS = "github-creds"
+        IMAGE_NAME = "devsecops-image"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
     }
 
     options {
@@ -18,21 +18,12 @@ pipeline {
             }
         }
 
-        stage('Prepare Tag') {
-            steps {
-                script {
-                    def tag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    env.TAG = tag
-                }
-            }
-        }
-
         stage('SAST - Bandit') {
             steps {
                 sh '''
                 docker run --rm -v "$PWD:/src" -w /src python:3.11-slim sh -c "
-                pip install --no-cache-dir bandit &&
-                mkdir -p reports && bandit -r . -f json -o reports/bandit-report.json
+                pip install bandit &&
+                bandit -r . -f json -o reports/bandit-report.json
                 "
                 python3 scripts/fail_bandit.py
                 '''
@@ -44,17 +35,15 @@ pipeline {
                 sh '''
                 docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
                 detect --source=/repo --report-format=json --report-path=/repo/reports/gitleaks-report.json
-
                 python3 scripts/fail_gitleaks.py
                 '''
             }
         }
 
-        stage('Build & Tag') {
+        stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t ${IMAGE}:${TAG} .
-                docker tag ${IMAGE}:${TAG} ${IMAGE}:latest
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                 '''
             }
         }
@@ -65,11 +54,11 @@ pipeline {
                 docker run --rm \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   -v "$PWD:/work" \
-                  ghcr.io/aquasecurity/trivy:latest image \
+                  aquasec/trivy:latest image \
                   --format json \
                   --output /work/reports/trivy-report.json \
                   --severity HIGH,CRITICAL \
-                  ${IMAGE}:${TAG}
+                  ${IMAGE_NAME}:${IMAGE_TAG}
 
                 python3 scripts/fail_trivy.py
                 '''
@@ -79,15 +68,13 @@ pipeline {
         stage('Deploy Local Staging For DAST') {
             steps {
                 sh '''
-                docker network inspect ci-net >/dev/null 2>&1 || docker network create ci-net
-                docker rm -f dast-app >/dev/null 2>&1 || true
+                docker network create ci-net 2>/dev/null || true
+                docker rm -f dast-app 2>/dev/null || true
 
                 docker run -d \
                   --name dast-app \
                   --network ci-net \
-                  ${IMAGE}:${TAG}
-
-                sleep 8
+                  ${IMAGE_NAME}:${IMAGE_TAG}
 
                 docker run --rm \
                   --network ci-net \
@@ -114,19 +101,13 @@ pipeline {
             }
         }
 
-        stage('Login GHCR') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${CREDS}", usernameVariable: 'U', passwordVariable: 'P')]) {
-                    sh 'echo "$P" | docker login ghcr.io -u "$U" --password-stdin'
-                }
-            }
-        }
-
         stage('Push Image') {
+            when {
+                expression { currentBuild.currentResult == null || currentBuild.currentResult == 'SUCCESS' }
+            }
             steps {
                 sh '''
-                docker push ${IMAGE}:${TAG}
-                docker push ${IMAGE}:latest
+                echo "Add GHCR login/tag/push here"
                 '''
             }
         }
@@ -136,15 +117,14 @@ pipeline {
         always {
             archiveArtifacts artifacts: 'reports/*', fingerprint: true
             sh '''
-            docker rm -f dast-app >/dev/null 2>&1 || true
-            docker logout ghcr.io || true
+            docker rm -f dast-app 2>/dev/null || true
             '''
         }
         success {
-            echo 'Pipeline passed all security gates and pushed image successfully.'
+            echo 'Pipeline passed all security gates.'
         }
         failure {
-            echo 'Pipeline blocked by security gates or failed during execution.'
+            echo 'Pipeline blocked by security gates.'
         }
     }
 }

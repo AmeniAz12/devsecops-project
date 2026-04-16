@@ -32,7 +32,7 @@ pipeline {
                 sh '''
                 docker run --rm -v "$PWD:/src" -w /src python:3.11-slim sh -c "
                 pip install --no-cache-dir bandit &&
-                bandit -r . -f json -o reports/bandit-report.json
+                mkdir -p reports && bandit -r . -f json -o reports/bandit-report.json
                 "
                 python3 scripts/fail_bandit.py
                 '''

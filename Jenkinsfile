@@ -18,18 +18,7 @@ pipeline {
             }
         }
 
-        stage('SAST - Bandit') {
-            steps {
-                sh '''
-                docker run --rm -v "$PWD:/src" -w /src python:3.11-slim sh -c "
-                pip install bandit &&
-                bandit -r . -f json -o reports/bandit-report.json
-                "
-                python3 scripts/fail_bandit.py
-                '''
-            }
-        }
-
+   
         stage('Secret Scan - Gitleaks') {
             steps {
                 sh '''

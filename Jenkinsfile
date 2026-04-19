@@ -8,6 +8,23 @@ pipeline {
         timestamps()
     }
     stages {
+	stage('SAST - Bandit') {
+            steps {
+                sh '''
+                docker run --rm \
+                  -v "$PWD:/src" \
+                  -w /src \
+                  python:3.11-slim sh -c "
+                    pip install --no-cache-dir bandit &&
+                    mkdir -p reports &&
+                    bandit -r . --exclude ./.git \
+                      -f json \
+                      -o reports/bandit-report.json || true
+                  "
+                python3 scripts/fail_bandit.py
+                '''
+            }
+        }
         stage('Checkout') {
             steps {
                 checkout scm

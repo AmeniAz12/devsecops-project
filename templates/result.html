@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="fr" class="dark h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Résultats — SOC OSINT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            boxShadow: {
+              glowCyan: "0 0 40px -10px rgba(34, 211, 238, 0.45)",
+              glowViolet: "0 0 40px -10px rgba(167, 139, 250, 0.35)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --soc-bg: #7885a1;
+      }
+      .soc-bg {
+        background-color: #7885a1;
+        background-image:
+          linear-gradient(135deg, rgba(15, 23, 42, 0.12) 0%, transparent 50%),
+          linear-gradient(225deg, rgba(67, 56, 202, 0.08) 0%, transparent 45%),
+          radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255, 255, 255, 0.08), transparent),
+          linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+        background-size: auto, auto, auto, 48px 48px, 48px 48px;
+      }
+      .glass-panel {
+        color: #f8fafc;
+        background: #0a101f;
+        border: 1px solid rgba(34, 211, 238, 0.14);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        backdrop-filter: none;
+      }
+      .glass-panel-violet {
+        background: #0a101f;
+        border-color: rgba(167, 139, 250, 0.22);
+      }
+      .btn-export-primary {
+        background: linear-gradient(135deg, #0891b2 0%, #06b6d4 45%, #7c3aed 100%);
+        box-shadow: 0 0 24px rgba(34, 211, 238, 0.22);
+      }
+      .btn-export-primary:hover {
+        filter: brightness(1.06);
+      }
+      .table-soc {
+        font-size: 0.8125rem;
+      }
+      .table-soc th {
+        text-align: left;
+        font-weight: 600;
+        color: #e2e8f0;
+        border-bottom: 1px solid rgba(34, 211, 238, 0.12);
+      }
+      .table-soc td {
+        border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+        vertical-align: top;
+      }
+    </style>
+  </head>
+  <body class="h-full bg-[#7885a1] text-slate-900 antialiased">
+    <div class="min-h-full soc-bg">
+      <header class="sticky top-0 z-40 border-b border-white/10 bg-[#070b14]">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 shadow-glowCyan">
+              <svg class="h-5 w-5 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-bold tracking-wide text-slate-100">SOC OSINT</span>
+                <span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">Rapport</span>
+              </div>
+              <p class="text-xs text-slate-300">{{ report.input.registrable_domain }}</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <nav class="hidden flex-wrap gap-1.5 text-[11px] font-semibold lg:flex">
+              <a href="/pentest" class="rounded-lg border border-white/10 px-2 py-1 text-slate-300 hover:bg-white/5">Pentest passif</a>
+            </nav>
+              <span class="rounded-lg border border-cyan-500/25 bg-cyan-500/5 px-2.5 py-1 font-mono text-[11px] text-cyan-200">{{ report.generated_at }}</span>
+            <a href="/" class="btn-export-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15M4.5 12h15" /></svg>
+              Nouveau scan
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-7xl px-4 py-8">
+        <!-- Export strip -->
+        <section class="glass-panel rounded-2xl p-5">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 class="text-lg font-bold text-slate-100">Exports</h1>
+              <p class="mt-1 text-sm text-slate-300">Téléchargement des artefacts générés côté serveur.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a
+                href="/download/{{ files.pdf }}"
+                class="btn-export-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                PDF
+              </a>
+              <a
+                href="/download/{{ files.txt }}"
+                class="inline-flex items-center gap-2 rounded-xl border border-cyan-500/35 bg-[#0a101f]/90 px-4 py-2.5 text-sm font-semibold text-cyan-100 hover:border-cyan-400/60 hover:bg-cyan-500/10"
+              >
+                <svg class="h-4 w-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                TXT
+              </a>
+              <a
+                href="/download/{{ files.json }}"
+                class="inline-flex items-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-2.5 text-sm font-semibold text-violet-100 hover:border-violet-400/55"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" /></svg>
+                JSON
+              </a>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-white/10 pt-4 font-mono text-[10px] text-slate-300">
+            <span>{{ files.pdf }}</span>
+            <span>{{ files.txt }}</span>
+            <span>{{ files.json }}</span>
+          </div>
+        </section>
+
+        <!-- KPI -->
+        <section class="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="glass-panel rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-200">A records</span>
+              <span class="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-bold text-cyan-200">DNS</span>
+            </div>
+            <div class="mt-2 text-3xl font-bold tabular-nums text-slate-100">{{ (report.dns.get("A") or [])|length }}</div>
+          </div>
+          <div class="glass-panel rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-200">Sous-domaines</span>
+              <span class="rounded border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-bold text-violet-200">CT</span>
+            </div>
+            <div class="mt-2 text-3xl font-bold tabular-nums text-slate-100">{{ (report.subdomains.subdomains or [])|length }}</div>
+          </div>
+          <div class="glass-panel rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-200">E-mails</span>
+              {% if (report.emails.emails or [])|length > 0 %}
+              <span class="rounded border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-200">FOUND</span>
+              {% else %}
+              <span class="rounded border border-slate-600 bg-slate-800/80 px-1.5 py-0.5 text-[10px] font-bold text-slate-300">NONE</span>
+              {% endif %}
+            </div>
+            <div class="mt-2 text-3xl font-bold tabular-nums text-slate-100">{{ (report.emails.emails or [])|length }}</div>
+          </div>
+          <div class="glass-panel rounded-2xl p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-200">HIBP</span>
+              {% if report.hibp.enabled %}
+              <span class="rounded border border-emerald-500/35 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-200">ARMÉ</span>
+              {% else %}
+              <span class="rounded border border-slate-600 bg-slate-800/80 px-1.5 py-0.5 text-[10px] font-bold text-slate-300">OFF</span>
+              {% endif %}
+            </div>
+            <div class="mt-2 text-3xl font-bold tabular-nums text-slate-100">{% if report.hibp.enabled %}ON{% else %}OFF{% endif %}</div>
+          </div>
+        </section>
+
+        <!-- Grid résultats -->
+        <section class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <!-- DNS -->
+          <div class="glass-panel rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-base font-bold text-slate-100">DNS</h2>
+              <span class="rounded-full border border-cyan-500/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">Enregistrements</span>
+            </div>
+            <div class="mt-4 overflow-x-auto rounded-xl border border-white/5 bg-[#0a101f]/60">
+              <table class="table-soc w-full min-w-[320px] border-collapse">
+                <thead>
+                  <tr>
+                    <th class="px-3 py-2">Type</th>
+                    <th class="px-3 py-2">Valeurs</th>
+                  </tr>
+                </thead>
+                <tbody class="text-slate-100">
+                  {% for k in ["A","MX","NS","TXT"] %}
+                  <tr>
+                    <td class="whitespace-nowrap px-3 py-2 font-mono text-xs text-cyan-300">{{ k }}</td>
+                    <td class="px-3 py-2 text-xs">
+                      {% set vals = report.dns.get(k) or [] %}
+                      {% if vals %}
+                        {% for v in vals %}<div class="break-all py-0.5">{{ v }}</div>{% endfor %}
+                      {% else %}
+                        <span class="text-slate-300">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Subdomains -->
+          <div class="glass-panel rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-base font-bold text-slate-100">Sous-domaines (CT)</h2>
+              {% if report.subdomains.error %}
+              <span class="rounded border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">WARN</span>
+              {% else %}
+              <span class="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">OK</span>
+              {% endif %}
+            </div>
+            {% if report.subdomains.error %}
+            <p class="mt-3 text-sm text-amber-200">{{ report.subdomains.error }}</p>
+            {% endif %}
+            <ul class="mt-4 max-h-72 space-y-1 overflow-y-auto rounded-xl border border-white/5 bg-[#0a101f]/60 p-3 font-mono text-xs text-slate-200">
+              {% set subs = report.subdomains.subdomains or [] %}
+              {% if subs %}
+                {% for s in subs %}<li class="break-all border-b border-white/5 py-1.5 last:border-0">{{ s }}</li>{% endfor %}
+              {% else %}
+                <li class="text-slate-300">Aucun résultat</li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- Emails -->
+          <div class="glass-panel rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-base font-bold text-slate-100">E-mails (publics)</h2>
+              {% if (report.emails.emails or [])|length > 0 %}
+              <span class="rounded border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">EXPOSÉ</span>
+              {% else %}
+              <span class="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300">VIDE</span>
+              {% endif %}
+            </div>
+            <ul class="mt-4 space-y-2">
+              {% set emails = report.emails.emails or [] %}
+              {% if emails %}
+                {% for e in emails %}
+                <li class="flex items-center gap-2 rounded-lg border border-white/5 bg-[#0a101f]/70 px-3 py-2 text-sm">
+                  <span class="text-cyan-400/80">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+                  </span>
+                  <span class="break-all font-mono text-cyan-100">{{ e }}</span>
+                </li>
+                {% endfor %}
+              {% else %}
+                <li class="text-sm text-slate-300">Aucun e-mail détecté sur les pages parcourues.</li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- HIBP -->
+          <div class="glass-panel-violet glass-panel rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-base font-bold text-slate-100">Compromission (HIBP)</h2>
+              {% if not report.hibp.enabled %}
+              <span class="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300">DÉSACTIVÉ</span>
+              {% elif report.hibp.error %}
+              <span class="rounded border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">ERREUR</span>
+              {% else %}
+              <span class="rounded border border-violet-500/35 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-200">ACTIF</span>
+              {% endif %}
+            </div>
+            {% if not report.hibp.enabled %}
+            <p class="mt-4 text-sm text-slate-300">Module non activé pour ce scan.</p>
+            {% else %}
+              {% if report.hibp.error %}
+              <p class="mt-3 text-sm text-amber-200">{{ report.hibp.error }}</p>
+              {% endif %}
+              <div class="mt-4 space-y-3">
+                {% for email, entry in (report.hibp.results or {}).items() %}
+                <div class="rounded-xl border border-white/5 bg-[#0a101f]/70 p-4">
+                  <div class="font-mono text-sm text-violet-100/95">{{ email }}</div>
+                  {% if entry.error %}
+                  <p class="mt-2 text-xs text-amber-200">{{ entry.error }}</p>
+                  {% else %}
+                    {% set breaches = entry.breaches or [] %}
+                    {% if not breaches %}
+                    <p class="mt-2 text-xs text-slate-300">Aucune breach connue (HIBP).</p>
+                    {% else %}
+                    <ul class="mt-3 space-y-1 text-xs text-slate-200">
+                      {% for b in breaches %}
+                      <li class="flex flex-wrap items-center gap-2">
+                        <span class="rounded bg-violet-500/15 px-2 py-0.5 font-medium text-violet-100">{{ b.Title or b.Name }}</span>
+                        <span class="text-slate-300">{{ b.BreachDate or "?" }}</span>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                {% endfor %}
+                {% if not (report.hibp.results or {}) %}
+                <p class="text-sm text-slate-300">Aucun e-mail à vérifier.</p>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Technologies -->
+          <div class="glass-panel rounded-2xl p-6 xl:col-span-2">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-base font-bold text-slate-100">Technologies</h2>
+              {% if report.technologies.error %}
+              <span class="rounded border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">WARN</span>
+              {% else %}
+              <span class="rounded border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-200">HEURISTIQUE</span>
+              {% endif %}
+            </div>
+            {% if report.technologies.error %}
+            <p class="mt-3 text-sm text-amber-200">{{ report.technologies.error }}</p>
+            {% endif %}
+            {% set tech = report.technologies.technologies or {} %}
+            {% if tech %}
+            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              {% for cat, items in tech.items() %}
+              <details class="group rounded-xl border border-cyan-500/15 bg-[#0a101f]/60 open:border-cyan-500/30" {% if loop.first %}open{% endif %}>
+                <summary class="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-100 marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span class="flex items-center justify-between gap-2">
+                    <span>{{ cat }}</span>
+                    <span class="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-200">{{ (items or [])|length }}</span>
+                  </span>
+                </summary>
+                <div class="flex flex-wrap gap-2 border-t border-white/5 px-4 pb-4 pt-3">
+                  {% for it in items %}
+                  <span class="rounded-lg border border-slate-600/60 bg-slate-900/50 px-2.5 py-1 text-xs text-slate-100">{{ it }}</span>
+                  {% endfor %}
+                </div>
+              </details>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="mt-4 text-sm text-slate-300">(vide)</p>
+            {% endif %}
+          </div>
+
+          <!-- WHOIS -->
+          <div class="glass-panel rounded-2xl p-6 xl:col-span-2">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-base font-bold text-slate-100">WHOIS</h2>
+              {% if report.whois.error %}
+              <span class="rounded border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">WARN</span>
+              {% elif report.whois.whois %}
+              <span class="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">OK</span>
+              {% else %}
+              <span class="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300">VIDE</span>
+              {% endif %}
+            </div>
+            {% if report.whois.error %}
+            <p class="mt-3 text-sm text-amber-200">{{ report.whois.error }}</p>
+            {% endif %}
+            {% set w = report.whois.whois or {} %}
+            {% if w %}
+            <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Champs clés</h3>
+                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {% set keys = ["registrar","domain_name","creation_date","expiration_date","updated_date","name_servers","status","whois_server"] %}
+                  {% for k in keys %}
+                    {% if w.get(k) is not none %}
+                    <div class="rounded-xl border border-white/5 bg-[#0a101f]/70 p-3">
+                      <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-200">{{ k }}</div>
+                      <div class="mt-1 break-words text-sm text-slate-100">{{ w.get(k) }}</div>
+                    </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+              <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Dump complet</h3>
+                <div class="mt-3 max-h-80 overflow-auto rounded-xl border border-white/5 bg-[#050812]/90 p-4 font-mono text-[11px] leading-relaxed text-slate-300">
+                  {% for k, v in w.items() %}
+                  <div class="border-b border-white/5 py-1.5 last:border-0"><span class="text-cyan-400/80">{{ k }}</span> = {{ v }}</div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <p class="mt-4 text-sm text-slate-300">(vide)</p>
+            {% endif %}
+          </div>
+        </section>
+
+        <footer class="mt-10 border-t border-slate-900/20 pt-6 text-center text-xs font-medium text-slate-900">
+          Sources publiques • Détection techno heuristique • Usage défensif
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

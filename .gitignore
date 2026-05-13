@@ -1,0 +1,39 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Backup
+backup-mini-app/
+
+
+# Secrets / env
+.env
+*.env
+secrets.*
+credentials.*
+token.*
+
+# Generated app reports
+app_reports/
+generated_reports/
+
+# CI/CD reports
+reports/*
+!reports/.gitkeep
+
+# Terraform local cache / state backup
+terraform/.terraform/
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

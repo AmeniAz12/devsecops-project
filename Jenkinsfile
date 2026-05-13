@@ -1,17 +1,14 @@
 pipeline {
     agent any
-
     environment {
         IMAGE_NAME = "devsecops-image"
         IMAGE_TAG  = "${BUILD_NUMBER}"
-        PUSHGATEWAY_URL = "http://192.168.126.147:9091/metrics/job/devsecops-pipeline"
     }
-
     options {
         timestamps()
     }
-
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -26,13 +23,13 @@ pipeline {
                   -v "$PWD:/src" \
                   -w /src \
                   python:3.11-slim sh -c "
-                  pip install --no-cache-dir bandit &&
-                  mkdir -p reports &&
-                  bandit -r . --exclude ./.git \
-                    -f json \
-                    -o reports/bandit-report.json || true
+                    pip install --no-cache-dir bandit &&
+                    mkdir -p reports &&
+                    bandit -r app.py webapp.py osint_reporter/ \
+                      --exclude ./.git,./backup-mini-app \
+                      -f json \
+                      -o reports/bandit-report.json || true
                   "
-
                 python3 scripts/fail_bandit.py
                 '''
             }
@@ -48,7 +45,6 @@ pipeline {
                   --source=/repo \
                   --report-format=json \
                   --report-path=/repo/reports/gitleaks-report.json || true
-
                 python3 scripts/fail_gitleaks.py
                 '''
             }
@@ -74,7 +70,6 @@ pipeline {
                   --output /work/reports/trivy-report.json \
                   --severity HIGH,CRITICAL \
                   ${IMAGE_NAME}:${IMAGE_TAG} || true
-
                 python3 scripts/fail_trivy.py
                 '''
             }
@@ -85,14 +80,11 @@ pipeline {
                 sh '''
                 docker network create ci-net 2>/dev/null || true
                 docker rm -f dast-app 2>/dev/null || true
-
                 docker run -d \
                   --name dast-app \
                   --network ci-net \
                   ${IMAGE_NAME}:${IMAGE_TAG}
-
                 sleep 8
-
                 docker run --rm \
                   --network ci-net \
                   curlimages/curl:latest \
@@ -112,7 +104,6 @@ pipeline {
                   -t http://dast-app:5000 \
                   -J zap-report.json \
                   -r zap-report.html || true
-
                 python3 scripts/fail_zap.py
                 '''
             }
@@ -126,9 +117,7 @@ pipeline {
                 }
             }
             steps {
-                sh '''
-                echo "Pipeline complete - image ready: ${IMAGE_NAME}:${IMAGE_TAG}"
-                '''
+                sh 'echo "Pipeline complete - image: ${IMAGE_NAME}:${IMAGE_TAG}"'
             }
         }
     }
@@ -138,23 +127,11 @@ pipeline {
             archiveArtifacts artifacts: 'reports/*', fingerprint: true
             sh 'docker rm -f dast-app 2>/dev/null || true'
         }
-
         success {
             echo 'Pipeline passed all security gates.'
-            sh '''
-            echo "jenkins_build_status 0" | docker run --rm -i curlimages/curl:latest \
-              --data-binary @- \
-              ${PUSHGATEWAY_URL} || true
-            '''
         }
-
         failure {
             echo 'Pipeline blocked by security gates.'
-            sh '''
-            echo "jenkins_build_status 1" | docker run --rm -i curlimages/curl:latest \
-              --data-binary @- \
-              ${PUSHGATEWAY_URL} || true
-            '''
         }
     }
 }

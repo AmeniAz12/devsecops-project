@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="fr" class="dark h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SOC OSINT — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              soc: {
+                bg: "#7885a1",
+                panel: "#0a101f",
+                cyan: "#22d3ee",
+                violet: "#a78bfa",
+              },
+            },
+            boxShadow: {
+              glowCyan: "0 0 40px -10px rgba(34, 211, 238, 0.45)",
+              glowViolet: "0 0 40px -10px rgba(167, 139, 250, 0.35)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --soc-bg: #7885a1;
+      }
+      .soc-bg {
+        background-color: #7885a1;
+        background-image:
+          linear-gradient(135deg, rgba(15, 23, 42, 0.12) 0%, transparent 50%),
+          linear-gradient(225deg, rgba(67, 56, 202, 0.08) 0%, transparent 45%),
+          radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255, 255, 255, 0.08), transparent),
+          linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+        background-size: auto, auto, auto, 48px 48px, 48px 48px;
+      }
+      /* Menu : #070b14 ; page : #7885a1 ; cartes : #0a101f */
+      .glass-panel {
+        color: #f8fafc;
+        background: #0a101f;
+        border: 1px solid rgba(34, 211, 238, 0.14);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        backdrop-filter: none;
+      }
+      .glass-panel-accent {
+        background: #0a101f;
+        border-color: rgba(167, 139, 250, 0.22);
+      }
+      .btn-soc-primary {
+        background: linear-gradient(135deg, #0891b2 0%, #06b6d4 40%, #7c3aed 100%);
+        box-shadow: 0 0 24px rgba(34, 211, 238, 0.25);
+      }
+      .btn-soc-primary:hover {
+        filter: brightness(1.08);
+      }
+      .btn-soc-ghost {
+        border: 1px solid rgba(34, 211, 238, 0.35);
+        background: rgba(13, 19, 33, 0.5);
+      }
+      .progress-track {
+        background: rgba(34, 211, 238, 0.08);
+        border: 1px solid rgba(34, 211, 238, 0.2);
+      }
+      .progress-fill {
+        background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+        transition: width 0.35s ease;
+      }
+      .scan-line {
+        animation: pulse-scan 2s ease-in-out infinite;
+      }
+      @keyframes pulse-scan {
+        0%,
+        100% {
+          opacity: 0.35;
+        }
+        50% {
+          opacity: 0.85;
+        }
+      }
+    </style>
+  </head>
+  <body class="h-full bg-[#7885a1] text-slate-900 antialiased">
+    <div class="min-h-full soc-bg">
+      <!-- Top bar -->
+      <header class="sticky top-0 z-40 border-b border-white/10 bg-[#070b14]">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 shadow-glowCyan">
+              <svg class="h-5 w-5 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-bold tracking-wide text-slate-100">SOC OSINT</span>
+                <span class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">Live</span>
+                <span class="rounded-full border border-cyan-500/30 bg-cyan-500/5 px-2 py-0.5 text-[10px] font-medium text-cyan-200">Défensif</span>
+              </div>
+              <p class="text-xs text-slate-300">Collecte publique • Rapports TXT / PDF / JSON</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <nav class="hidden flex-wrap gap-1.5 text-[11px] font-semibold md:flex">
+              <a href="/pentest" class="rounded-lg border border-white/10 px-2 py-1 text-slate-300 hover:bg-white/5 hover:text-violet-200">Pentest passif</a>
+            </nav>
+            <span class="hidden items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-slate-300 sm:inline-flex">
+              <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>
+              Console prête
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-7xl px-4 py-8">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <!-- Left: scan -->
+          <section class="lg:col-span-7">
+            <div class="glass-panel rounded-2xl p-6 lg:p-8">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h1 class="text-xl font-bold tracking-tight text-slate-100 sm:text-2xl">Nouvelle collecte</h1>
+                  <p class="mt-1 text-sm text-slate-300">Saisie cible, modules DNS / CT / Web / WHOIS / HIBP optionnel.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span class="rounded-md border border-violet-500/35 bg-violet-500/10 px-2 py-1 text-[11px] font-semibold text-violet-200">Export</span>
+                  <span class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200">TXT</span>
+                  <span class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200">PDF</span>
+                  <span class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200">JSON</span>
+                </div>
+              </div>
+
+              <form id="scanForm" action="/scan" method="post" class="mt-8 space-y-6">
+                <div>
+                  <label class="text-xs font-semibold uppercase tracking-wider text-slate-200">Cible</label>
+                  <div class="mt-2 flex items-stretch gap-2 rounded-xl border border-cyan-500/25 bg-black/35 px-3 py-2 shadow-inner focus-within:border-cyan-400/50 focus-within:shadow-glowCyan">
+                    <span class="flex w-11 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-300">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                      </svg>
+                    </span>
+                    <input
+                      name="target"
+                      required
+                      placeholder="https://example.com ou example.com"
+                      class="min-w-0 flex-1 bg-transparent py-2 text-sm text-slate-100 placeholder:text-slate-400 outline-none"
+                    />
+                  </div>
+                  <p class="mt-2 text-xs text-slate-300">Privilégier le domaine registrable (sans chemin).</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-200">Timeout (s)</label>
+                    <input
+                      type="number"
+                      name="timeout"
+                      value="{{ defaults.timeout }}"
+                      min="1"
+                      max="120"
+                      class="mt-2 w-full rounded-xl border border-slate-600/40 bg-black/35 px-4 py-3 text-sm text-slate-100 outline-none ring-0 focus:border-cyan-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-200">User-Agent</label>
+                    <input
+                      name="user_agent"
+                      value="{{ defaults.user_agent }}"
+                      class="mt-2 w-full rounded-xl border border-slate-600/40 bg-black/35 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-500/50"
+                    />
+                  </div>
+                </div>
+
+                <div class="glass-panel-accent rounded-xl border p-4">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex gap-3">
+                      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.031 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div class="text-sm font-semibold text-slate-100">HIBP (optionnel)</div>
+                        <p class="mt-0.5 text-xs text-slate-300">Métadonnées de breaches uniquement — pas de mots de passe.</p>
+                      </div>
+                    </div>
+                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600/50 bg-black/35 px-3 py-2 text-sm">
+                      <input type="checkbox" name="hibp_enabled" class="h-4 w-4 rounded border-slate-500 text-cyan-500 focus:ring-cyan-500/40" />
+                      <span class="text-slate-300">Activer</span>
+                    </label>
+                  </div>
+                  <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label class="text-xs font-semibold text-slate-200">Clé API</label>
+                      <input
+                        name="hibp_api_key"
+                        type="password"
+                        autocomplete="off"
+                        placeholder="Ou variable HIBP_API_KEY"
+                        class="mt-2 w-full rounded-xl border border-slate-600/40 bg-black/35 px-4 py-3 text-sm text-slate-100 outline-none focus:border-violet-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-slate-200">E-mails (1 / ligne)</label>
+                      <textarea
+                        name="hibp_emails"
+                        rows="3"
+                        placeholder="contact@domaine.tld"
+                        class="mt-2 w-full resize-y rounded-xl border border-slate-600/40 bg-black/35 px-4 py-3 text-sm text-slate-100 outline-none focus:border-violet-500/50"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Progress (client-side) -->
+                <div id="scanProgressWrap" class="hidden rounded-xl border border-cyan-500/20 bg-black/25 p-4">
+                  <div class="flex items-center justify-between gap-2">
+                    <span id="scanStage" class="text-xs font-medium text-slate-200">Initialisation…</span>
+                    <span id="scanPct" class="text-xs tabular-nums text-slate-200">0%</span>
+                  </div>
+                  <div class="progress-track mt-3 h-2 overflow-hidden rounded-full">
+                    <div id="scanBar" class="progress-fill h-full w-0 rounded-full"></div>
+                  </div>
+                  <p class="mt-2 text-[11px] text-slate-300">La progression est indicative (collecte réseau côté serveur).</p>
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p class="text-xs text-slate-300">Sources CT publiques • Usage défensif autorisé par politique interne.</p>
+                  <button
+                    id="scanBtn"
+                    type="submit"
+                    class="btn-soc-primary inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white"
+                  >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                    </svg>
+                    Lancer le scan
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <!-- Right: modules -->
+          <aside class="lg:col-span-5">
+            <div class="space-y-4">
+              <div class="glass-panel rounded-2xl p-5">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Modules</h2>
+                <ul class="mt-4 space-y-3">
+                  <li class="flex items-start gap-3 rounded-xl border border-cyan-500/15 bg-cyan-500/5 p-3">
+                    <span class="mt-0.5 text-cyan-400">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75A2.25 2.25 0 0 1 15.75 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25v2.25a2.25 2.25 0 0 1-2.25 2.25h-2.25a2.25 2.25 0 0 1-2.25-2.25V15.75Z" /></svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-100">DNS & résolution</div>
+                      <div class="text-xs text-slate-300">A, MX, NS, TXT</div>
+                    </div>
+                  </li>
+                  <li class="flex items-start gap-3 rounded-xl border border-violet-500/15 bg-violet-500/5 p-3">
+                    <span class="mt-0.5 text-violet-300">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" /></svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-100">Surface (CT)</div>
+                      <div class="text-xs text-slate-300">Sous-domaines publics</div>
+                    </div>
+                  </li>
+                  <li class="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <span class="mt-0.5 text-cyan-300">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-100">Web & WHOIS</div>
+                      <div class="text-xs text-slate-300">Technos, e-mails page, registrar</div>
+                    </div>
+                  </li>
+                  <li class="flex items-start gap-3 rounded-xl border border-violet-500/15 bg-violet-500/5 p-3">
+                    <span class="mt-0.5 text-violet-300">
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="text-sm font-semibold text-slate-100">Pentest passif</div>
+                      <div class="text-xs text-slate-300">Audit des en-têtes HTTP (HSTS, CSP, etc.) — sans exploitation</div>
+                      <div class="mt-2">
+                        <a href="/pentest" class="inline-flex rounded-md border border-violet-500/30 px-2 py-0.5 text-[11px] text-violet-200 hover:bg-violet-500/10">Ouvrir l’audit</a>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="glass-panel rounded-2xl p-5">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">État pipeline</span>
+                  <span class="scan-line text-[10px] font-mono text-cyan-300">SCAN_READY</span>
+                </div>
+                <div class="mt-3 h-px w-full bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"></div>
+                <p class="mt-3 text-xs leading-relaxed text-slate-300">
+                  Port occupé ? Lance avec <code class="rounded bg-black/25 px-1 py-0.5 font-mono text-cyan-200/90">--port 8001</code>
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        var form = document.getElementById("scanForm");
+        var btn = document.getElementById("scanBtn");
+        var wrap = document.getElementById("scanProgressWrap");
+        var bar = document.getElementById("scanBar");
+        var pctEl = document.getElementById("scanPct");
+        var stageEl = document.getElementById("scanStage");
+        var stages = ["DNS…", "Certificate Transparency…", "Surface web…", "WHOIS…", "Compilation rapport…"];
+        var t = null;
+
+        form.addEventListener("submit", function () {
+          wrap.classList.remove("hidden");
+          btn.disabled = true;
+          btn.innerHTML =
+            '<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Collecte…';
+
+          var p = 0;
+          var si = 0;
+          stageEl.textContent = stages[0];
+          pctEl.textContent = "0%";
+          bar.style.width = "0%";
+
+          t = setInterval(function () {
+            p = Math.min(p + Math.random() * 12 + 4, 92);
+            bar.style.width = p.toFixed(0) + "%";
+            pctEl.textContent = Math.round(p) + "%";
+            if (p > 15 + si * 18 && si < stages.length - 1) {
+              si++;
+              stageEl.textContent = stages[si];
+            }
+          }, 420);
+        });
+
+        window.addEventListener("beforeunload", function () {
+          if (t) clearInterval(t);
+        });
+      })();
+    </script>
+  </body>
+</html>

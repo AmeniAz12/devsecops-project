@@ -116,24 +116,37 @@ pipeline {
         }
 
         stage('DAST - ZAP Baseline') {
-            steps {
-                sh '''
-                docker run --rm \
-                  --network ci-net \
-                  --volumes-from jenkins \
-                  -w "$WORKSPACE" \
-                  --user root \
-                  ghcr.io/zaproxy/zaproxy:stable \
-                  zap-baseline.py \
-                  -t http://dast-app:5000 \
-                  -J reports/zap-report.json \
-                  -r reports/zap-report.html || true
+	    steps {
+        	sh '''
+        	ZAP_CONTAINER="zap-scan-${BUILD_NUMBER}"
+        	ZAP_VOLUME="zap-wrk-${BUILD_NUMBER}"
 
-                ls -lh reports/zap-report.json reports/zap-report.html
-                python3 scripts/fail_zap.py
-                '''
-            }
-        }
+	        docker rm -f "$ZAP_CONTAINER" 2>/dev/null || true
+        	docker volume rm "$ZAP_VOLUME" 2>/dev/null || true
+        	docker volume create "$ZAP_VOLUME"
+
+        	docker run \
+          	--name "$ZAP_CONTAINER" \
+          	--network ci-net \
+          	--user root \
+          	-v "$ZAP_VOLUME:/zap/wrk" \
+          	ghcr.io/zaproxy/zaproxy:stable \
+          	zap-baseline.py \
+          	-t http://dast-app:5000 \
+          	-J zap-report.json \
+          	-r zap-report.html || true
+
+        	docker cp "$ZAP_CONTAINER:/zap/wrk/zap-report.json" reports/zap-report.json
+        	docker cp "$ZAP_CONTAINER:/zap/wrk/zap-report.html" reports/zap-report.html
+
+        	docker rm -f "$ZAP_CONTAINER" 2>/dev/null || true
+        	docker volume rm "$ZAP_VOLUME" 2>/dev/null || true
+
+        	ls -lh reports/zap-report.json reports/zap-report.html
+        	python3 scripts/fail_zap.py
+        	'''
+	    }
+	}
 
         stage('Final Result') {
             steps {
